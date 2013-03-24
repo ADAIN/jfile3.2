@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="egovframework.com.jfile.mapper.JFileMapper">
+
+	<insert id="addAttachFile" parameterType="egovframework.com.jfile.service.impl.JFileVO">
+		INSERT 
+		  INTO J_ATTACHFILE 
+		      (
+			   FILE_ID              , 
+			   FILE_SEQ             , 
+			   FILE_NAME            , 
+			   FILE_SIZE            , 
+			   FILE_MASK            , 
+			   DOWNLOAD_COUNT       ,
+			   DOWNLOAD_LIMIT_COUNT
+			  )
+			   VALUES
+			  (  
+			   #{fileId}                       ,
+			   (SELECT NVL(MAX(FILE_SEQ),0)+1
+				  FROM J_ATTACHFILE
+				 WHERE FILE_ID = #{fileId}				     
+			   )                               , 
+			   #{fileName}                     , 
+			   #{fileSize}                     , 
+			   #{fileMask}                     ,
+			    0                              ,
+			   '0'
+			  )				
+	</insert>
+	
+	<sql id="selectAttachFileSQL">
+		SELECT 
+			   FILE_ID               as fileId    , 
+			   FILE_SEQ              as fileSeq    , 
+			   FILE_NAME             as fileName    ,
+		       FILE_SIZE             as fileSize    , 
+		       FILE_MASK             as fileMask    , 
+		       DOWNLOAD_COUNT        as downloadCount    , 
+		       DOWNLOAD_EXPIRE_DATE  as downloadExpireDate, 
+		       DOWNLOAD_LIMIT_COUNT  as downloadLimitCount, 
+		       REG_DATE              as regDate
+		  FROM J_ATTACHFILE
+		<where>
+			<if test="fileId != null">
+                FILE_ID  = #{fileId}
+			</if>
+			<if test="fileSeq != null">
+               AND FILE_SEQ = #{fileSeq}
+            </if>
+		</where>
+		
+	</sql>
+	
+	<select id="selectAttachFile" parameterType="egovframework.com.jfile.service.impl.JFileVO" resultType="egovframework.com.jfile.service.impl.JFileVO">
+	    <include refid="selectAttachFileSQL"/>
+	</select>
+	
+	<select id="selectAttachFiles" parameterType="egovframework.com.jfile.service.impl.JFileVO" resultType="egovframework.com.jfile.service.impl.JFileVO">
+		<include refid="selectAttachFileSQL"/>
+	</select>
+	
+	<update id="updateAttachFileDeleteYnByFileId" parameterType="egovframework.com.jfile.service.impl.JFileVO">
+		UPDATE J_ATTACHFILE
+		   SET DELETE_YN = #{deleteYn}
+		 WHERE FILE_ID   = #{fileId}
+	</update>
+	
+	<sql id="updateAttachFileDownloadCountSQL">
+		UPDATE J_ATTACHFILE 
+           SET DOWNLOAD_COUNT = DOWNLOAD_COUNT + 1
+		<where>
+			<if test="fileId != null">
+                FILE_ID  = #{fileId}
+			</if>
+			<if test="fileSeq != null">
+               AND FILE_SEQ = #{fileSeq}
+            </if>		
+		</where>
+	</sql>
+	
+	<!-- <update id="updateAttachFileDownloadCount" parameterType="String">
+		<include refid="updateAttachFileDownloadCountSQL"/>
+	</update> -->
+	
+	<update id="updateAttachFileDownloadCount" parameterType="egovframework.com.jfile.service.impl.JFileVO">
+		<include refid="updateAttachFileDownloadCountSQL"/>
+	</update>
+	
+	<delete id="removeAttachFile" parameterType="egovframework.com.jfile.service.impl.JFileVO">
+		DELETE
+          FROM J_ATTACHFILE 
+         WHERE FILE_ID  = #{fileId}
+         <if test="fileSeqs != null">
+           AND FILE_SEQ IN 
+			<foreach collection="fileSeqs" item="seq" index="index" separator="," open="(" close=")">
+				#{seq}
+			</foreach>
+         </if>
+         
+	</delete>
+	
+	<select id="getAttachFileSeqs" parameterType="String" resultType="String">
+		SELECT FILE_SEQ
+		  FROM J_ATTACHFILE
+		 WHERE FILE_ID = #{value}
+		   AND DELETE_YN = 'Y'
+	</select>
+	
+	<update id="updateAttachFileDeleteYn" parameterType="egovframework.com.jfile.service.impl.JFileVO">
+		UPDATE J_ATTACHFILE
+		   SET DELETE_YN = #{deleteYn}
+		 WHERE FILE_ID  = #{fileId}  
+		<if test="fileSeqs != null">
+           AND FILE_SEQ IN 
+			<foreach collection="fileSeqs" item="seq" index="index" separator="," open="(" close=")">
+				#{seq}
+			</foreach>
+		</if>
+       
+	</update>
+	
+	<select id="isExistingAttachFileInfo" parameterType="egovframework.com.jfile.service.impl.JFileVO">
+		SELECT FILE_ID
+		  FROM J_ATTACHFILE
+		 WHERE FILE_ID  = #{fileId}
+		<if test="fileSeqs != null">
+           AND FILE_SEQ IN 
+			<foreach collection="fileSeqs" item="seq" index="index" separator="," open="(" close=")">
+				#{seq}
+			</foreach>
+		</if>
+         
+	</select>
+	
+	<update id="updateAttachFileDownloadCountBySequence" parameterType="egovframework.com.jfile.service.impl.JFileVO">
+		UPDATE J_ATTACHFILE
+           SET DOWNLOAD_COUNT = DOWNLOAD_COUNT + 1
+         WHERE FILE_ID        = #{fileId}
+           AND FILE_SEQ       = #{fileSeq}
+	</update>
+	
+	<update id="updateAttachFileDownloadCountByFileId" parameterType="String">
+		UPDATE J_ATTACHFILE
+           SET DOWNLOAD_COUNT = DOWNLOAD_COUNT + 1
+         WHERE FILE_ID = #{value}
+	</update>
+</mapper>
